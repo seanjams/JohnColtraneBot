@@ -1,5 +1,4 @@
 import logging
-import requests
 from prawcore.exceptions import ResponseException
 
 from db import JobRun, JobStatus
@@ -36,13 +35,16 @@ def check_for_john_coltranes():
             # iterate over all comments and replies in breadth first order
             for comment in submission.comments.list():
                 body = getattr(comment, "body", None)
-                if not body:
+                author = getattr(comment, "author", None)
+                if not body or not author:
                     continue
 
                 # if we have already replied to this comment,
                 # we can remove the parent ID from the queue
-                if comment.author.name == REDDIT_USERNAME:
-                    john_coltranes.pop(comment.parent_id, None)
+                if author.name == REDDIT_USERNAME:
+                    # parent id looks like t1_kc2kr2t, so split it
+                    parent_id = comment.parent_id.split("_")[1]
+                    john_coltranes.pop(parent_id, None)
                     continue
                 
                 # if the comment matches the criteria, add its ID to queue
@@ -77,6 +79,10 @@ def check_for_john_coltranes():
         job_status = JobStatus.success
     except ResponseException as e:
         msg = f"Error John Coltraning everyone: {e.response.content}"
+        job_status = JobStatus.error
+    except Exception as e:
+        log.exception(e)
+        msg = f"Unexpected error John Coltraning everyone"
         job_status = JobStatus.error
 
     # save new job run to DB
