@@ -22,6 +22,7 @@ Environment=REDDIT_CLIENT_SECRET=<Your Reddit Oauth Client Secret>
 Environment=REDDIT_USER_AGENT=<console:JOHNCOLTRANE:1.0>
 Environment=REDDIT_USERNAME=<Reddit Bot User's Username>
 Environment=REDDIT_PASSWORD=<Reddit Bot User's Password>
+Environment=LOGGING_VERBOSE=False
 
 [Install]
 WantedBy=multi-user.target

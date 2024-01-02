@@ -12,7 +12,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///db.sqlite")
 RUN_SCHEDULER = os.getenv("RUN_SCHEDULER")
 
 # Logs for development
-LOGGING_VERBOSE = os.getenv("LOGGING_VERBOSE", True)
+LOGGING_VERBOSE = os.getenv("LOGGING_VERBOSE")
+LOGGING_VERBOSE = False if LOGGING_VERBOSE == "False" else True
 
 # Reddit Config
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
