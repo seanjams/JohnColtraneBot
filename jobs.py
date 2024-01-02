@@ -1,5 +1,6 @@
 import logging
 from prawcore.exceptions import ResponseException
+from praw.models import MoreComments
 
 from db import JobRun, JobStatus
 from config import REDDIT_USERNAME, LOGGING_VERBOSE
@@ -29,43 +30,67 @@ def check_for_john_coltranes():
 
     try:
         for submission in subreddit.new(limit=10):
+            submission.comments.replace_more(limit=None)
             # store comments for replies
-            john_coltranes = {}
+            pending_replies = {}
+
+            title = submission.title.lower()
+            selftext = submission.selftext.lower()
+            add_comment_conditions = (
+                ("johncoltranebot" in title, "John Coltrane"),
+                ("johncoltranebot" in selftext, "John Coltrane"),
+                ("john coltrane" in title, "John Coltrane"),
+                ("john coltrane" in selftext, "John Coltrane"),
+                ("a love supreme" in title, "A love supreme"),
+                ("a love supreme" in selftext, "A love supreme"),
+            )
+
+            for condition, text in add_comment_conditions:
+                if condition:
+                    pending_replies[submission.id] = (submission, text)
+                    break
 
             # iterate over all comments and replies in breadth first order
             for comment in submission.comments.list():
-                body = getattr(comment, "body", None)
-                author = getattr(comment, "author", None)
-                if not body or not author:
+                if isinstance(comment, MoreComments):
                     continue
+
+                author = comment.author
+                body = comment.body.lower()
 
                 # if we have already replied to this comment,
                 # we can remove the parent ID from the queue
                 if author.name == REDDIT_USERNAME:
                     # parent id looks like t1_kc2kr2t, so split it
                     parent_id = comment.parent_id.split("_")[1]
-                    john_coltranes.pop(parent_id, None)
+                    pending_replies.pop(parent_id, None)
                     continue
                 
                 # if the comment matches the criteria, add its ID to queue
-                body_lower = body.lower()
-                if "john coltrane" in body_lower:
-                    john_coltranes[comment.id] = (comment, "John Coltrane")
-                elif "a love supreme" in body_lower:
-                    john_coltranes[comment.id] = (comment, "A love supreme")
+                reply_comment_conditions = (
+                    ("john coltrane" in body, "John Coltrane"),
+                    ("johncoltranebot" in body, "John Coltrane"),
+                    ("a love supreme" in body, "A love supreme"),
+                )
 
-            if not john_coltranes:
+                for condition, text in reply_comment_conditions:
+                    if condition:
+                        pending_replies[comment.id] = (comment, text)
+                        break
+
+            if not pending_replies:
                 continue
 
             # leave replies on candidate comments
             log_submission(submission)
-            for comment, reply in john_coltranes.values():
+            for comment, reply in pending_replies.values():
                 # Write reply to Reddit
                 comment.reply(reply)
 
                 # Log result
                 log_comment(comment)
                 comments_created.append({
+                    "submission_id": submission.id,
                     "submission_author": submission.author.name,
                     "submission_title": submission.title,
                     "parent_id": comment.id,
