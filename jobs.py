@@ -1,3 +1,4 @@
+import enum
 import logging
 from prawcore.exceptions import ResponseException
 from praw.models import MoreComments
@@ -7,6 +8,17 @@ from config import REDDIT_USERNAME, LOGGING_VERBOSE
 from reddit import reddit
 
 log = logging.getLogger(__name__)
+
+
+class CommentType(enum.Enum):
+    add = "add"
+    reply = "reply"
+
+
+class Reply(enum.Enum):
+    john_coltrane = "John Coltrane"
+    love_supreme = "A love supreme"
+
 
 def log_submission(submission):
     if LOGGING_VERBOSE:
@@ -37,12 +49,12 @@ def check_for_john_coltranes():
             title = submission.title.lower()
             selftext = submission.selftext.lower()
             add_comment_conditions = (
-                ("johncoltranebot" in title, "John Coltrane"),
-                ("johncoltranebot" in selftext, "John Coltrane"),
-                ("john coltrane" in title, "John Coltrane"),
-                ("john coltrane" in selftext, "John Coltrane"),
-                ("a love supreme" in title, "A love supreme"),
-                ("a love supreme" in selftext, "A love supreme"),
+                ("johncoltranebot" in title, Reply.john_coltrane.value),
+                ("johncoltranebot" in selftext, Reply.john_coltrane.value),
+                ("john coltrane" in title, Reply.john_coltrane.value),
+                ("john coltrane" in selftext, Reply.john_coltrane.value),
+                ("a love supreme" in title, Reply.love_supreme.value),
+                ("a love supreme" in selftext, Reply.love_supreme.value),
             )
 
             for condition, text in add_comment_conditions:
@@ -68,9 +80,9 @@ def check_for_john_coltranes():
                 
                 # if the comment matches the criteria, add its ID to queue
                 reply_comment_conditions = (
-                    ("john coltrane" in body, "John Coltrane"),
-                    ("johncoltranebot" in body, "John Coltrane"),
-                    ("a love supreme" in body, "A love supreme"),
+                    ("john coltrane" in body, Reply.john_coltrane.value),
+                    ("johncoltranebot" in body, Reply.john_coltrane.value),
+                    ("a love supreme" in body, Reply.love_supreme.value),
                 )
 
                 for condition, text in reply_comment_conditions:
@@ -87,18 +99,28 @@ def check_for_john_coltranes():
                 # Write reply to Reddit
                 comment.reply(reply)
 
-                # Log result
-                log_comment(comment)
-                comments_created.append({
+                is_top_level = comment.id == submission.id
+                comment_data = {
                     "submission_id": submission.id,
                     "submission_author": submission.author.name,
                     "submission_title": submission.title,
-                    "parent_id": comment.id,
-                    "parent_author": comment.author.name,
-                    "parent_body": comment.body,
+                    "parent_id": None,
+                    "parent_author": None,
+                    "parent_body": None,
                     "reply_author": REDDIT_USERNAME,
                     "reply_body": reply,
-                })
+                    "comment_type": CommentType.add.value
+                }
+
+                # Log result
+                if not is_top_level:
+                    comment_data["parent_id"] = comment.id
+                    comment_data["parent_author"] = comment.author.name
+                    comment_data["parent_body"] = comment.body
+                    comment_data["comment_type"] = CommentType.reply.value
+                    log_comment(comment)
+
+                comments_created.append(comment_data)
 
         msg = f"John Coltraned {len(comments_created)} faces."
         job_status = JobStatus.success
