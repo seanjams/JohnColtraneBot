@@ -72,7 +72,7 @@ def check_for_john_coltranes():
 
                 # if we have already replied to this comment,
                 # we can remove the parent ID from the queue
-                if author.name == REDDIT_USERNAME:
+                if author and author.name == REDDIT_USERNAME:
                     # parent id looks like t1_kc2kr2t, so split it
                     parent_id = comment.parent_id.split("_")[1]
                     pending_replies.pop(parent_id, None)
@@ -102,7 +102,7 @@ def check_for_john_coltranes():
                 is_top_level = comment.id == submission.id
                 comment_data = {
                     "submission_id": submission.id,
-                    "submission_author": submission.author.name,
+                    "submission_author": submission.author.name if submission.author else None,
                     "submission_title": submission.title,
                     "parent_id": None,
                     "parent_author": None,
@@ -115,7 +115,7 @@ def check_for_john_coltranes():
                 # Log result
                 if not is_top_level:
                     comment_data["parent_id"] = comment.id
-                    comment_data["parent_author"] = comment.author.name
+                    comment_data["parent_author"] = comment.author.name if comment.author else None
                     comment_data["parent_body"] = comment.body
                     comment_data["comment_type"] = CommentType.reply.value
                     log_comment(comment)
