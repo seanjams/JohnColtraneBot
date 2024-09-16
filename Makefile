@@ -15,3 +15,7 @@ stop:
 
 truncate_log:
 	tail -c 1M ./johncoltranebot.log > /tmp/johncoltranebot.log && rm ./johncoltranebot.log && mv /tmp/johncoltranebot.log ./johncoltranebot.log
+
+logs:
+	tail -f ./johncoltranebot.log
+
