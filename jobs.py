@@ -4,7 +4,7 @@ from prawcore.exceptions import ResponseException
 from praw.models import MoreComments
 
 from db import JobRun, JobStatus
-from config import REDDIT_USERNAME, LOGGING_VERBOSE
+from config import IGNORE_USERNAMES, REDDIT_USERNAME, LOGGING_VERBOSE
 from reddit import reddit
 
 log = logging.getLogger(__name__)
@@ -76,6 +76,10 @@ def check_for_john_coltranes():
                     # parent id looks like t1_kc2kr2t, so split it
                     parent_id = comment.parent_id.split("_")[1]
                     pending_replies.pop(parent_id, None)
+                    continue
+
+                # Gotta avoid responding to other bots
+                if author and author.name in IGNORE_USERNAMES:
                     continue
                 
                 # if the comment matches the criteria, add its ID to queue
