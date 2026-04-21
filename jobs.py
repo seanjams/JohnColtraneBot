@@ -41,7 +41,8 @@ def check_for_john_coltranes():
     comments_created = []
 
     try:
-        for submission in subreddit.new(limit=10):
+        # Check the newest 32 posts, and iterate over their comments
+        for submission in subreddit.new(limit=32):
             submission.comments.replace_more(limit=None)
             # store comments for replies
             pending_replies = {}
