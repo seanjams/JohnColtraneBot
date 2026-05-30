@@ -32,7 +32,7 @@ if not all((
         "No Reddit Credentials found in environment. Aborting."
     )
 
-IGNORE_USERNAMES = ["AliceColtraneBot"]
+IGNORE_USERNAMES = ["AliceColtraneBot", "AskGrok"]
 
 # set configuration values
 class Config:
